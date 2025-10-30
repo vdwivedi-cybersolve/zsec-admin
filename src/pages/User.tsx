@@ -42,7 +42,7 @@ const User = () => {
       <Tabs
         value={activeTab}
         onValueChange={(value) => setActiveTab(value as UserTab)}
-        className="flex-1 flex flex-col overflow-hidden"
+        className="flex-1 flex flex-col overflow-hidden min-h-0"
       >
         <div className="bg-carbon-layer-01 border-b border-border px-4 py-2">
           <TabsList className="grid w-fit grid-cols-2 bg-background/40">
@@ -61,6 +61,7 @@ const User = () => {
         </TabsContent>
         <TabsContent
           value="management"
+          className="flex-1 min-h-0 overflow-hidden"
         >
           <UserList onCreateUser={handleCreateUserClick} onEditUser={handleEditUser} />
         </TabsContent>
