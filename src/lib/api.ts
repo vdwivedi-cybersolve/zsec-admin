@@ -21,7 +21,7 @@ export type UpdateUserPayload = Partial<{
   expiration: string | null;
 }>;
 
-const API_BASE = (import.meta as any).env?.VITE_API_BASE || "http://localhost:4000/api";
+const API_BASE = (import.meta as any).env?.VITE_API_BASE || ((import.meta as any).env?.PROD ? "https://zsec-admin-server.onrender.com/api" : "http://localhost:4000/api");
 
 async function tryFetch<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, {
