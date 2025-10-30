@@ -1,0 +1,31 @@
+{
+  "users": [
+    {
+      "id": "seed-admin01",
+      "userid": "ADMIN01",
+      "name": "System Administrator",
+      "defaultGroup": "SYSADM",
+      "owner": "IBMUSER",
+      "status": "Active",
+      "createdAt": "2025-10-10T00:00:00.000Z"
+    },
+    {
+      "id": "seed-jdoe",
+      "userid": "JDOE",
+      "name": "John Doe - Contractor",
+      "defaultGroup": "STAFF",
+      "owner": "ADMIN01",
+      "status": "Active",
+      "createdAt": "2025-10-10T00:00:00.000Z"
+    },
+    {
+      "id": "seed-finance01",
+      "userid": "FINANCE01",
+      "name": "Finance User",
+      "defaultGroup": "FINANCE",
+      "owner": "ADMIN01",
+      "status": "Active",
+      "createdAt": "2025-10-10T00:00:00.000Z"
+    }
+  ]
+}
