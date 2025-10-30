@@ -163,6 +163,64 @@ app.delete("/api/users/:id", async (req, res, next) => {
   }
 });
 
+app.put("/api/users/:id", async (req, res, next) => {
+  try {
+    const id = req.params.id;
+    const parsed = userSchema.partial().safeParse(req.body);
+
+    if (!parsed.success) {
+      return res.status(400).json({
+        message: "Invalid user payload",
+        issues: parsed.error.issues.map((issue) => ({
+          message: issue.message,
+          path: issue.path.join("."),
+        })),
+      });
+    }
+
+    await db.read();
+    const users = db.data?.users ?? [];
+    const idx = users.findIndex((u) => u.id === id);
+    if (idx === -1) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const current = users[idx];
+    const normalized = {
+      ...current,
+      ...(parsed.data.userid !== undefined
+        ? { userid: parsed.data.userid.trim().toUpperCase() }
+        : {}),
+      ...(parsed.data.name !== undefined ? { name: parsed.data.name.trim() } : {}),
+      ...(parsed.data.defaultGroup !== undefined
+        ? { defaultGroup: parsed.data.defaultGroup.trim().toUpperCase() }
+        : {}),
+      ...(parsed.data.owner !== undefined
+        ? { owner: parsed.data.owner.trim().toUpperCase() }
+        : {}),
+      ...(parsed.data.status !== undefined ? { status: parsed.data.status } : {}),
+      ...(parsed.data.authOption !== undefined ? { authOption: parsed.data.authOption } : {}),
+      ...(parsed.data.expiration !== undefined ? { expiration: parsed.data.expiration || null } : {}),
+    };
+
+    // Enforce unique userid across records (excluding this record)
+    if (
+      normalized.userid &&
+      users.some((u) => u.id !== id && u.userid.toUpperCase() === normalized.userid.toUpperCase())
+    ) {
+      return res.status(409).json({ message: `User ${normalized.userid} already exists` });
+    }
+
+    users[idx] = normalized;
+    db.data.users = users;
+    await db.write();
+
+    res.json(normalized);
+  } catch (error) {
+    next(error);
+  }
+});
+
 app.use((error, _req, res, _next) => {
   console.error(error);
   res.status(500).json({ message: "Unexpected server error" });

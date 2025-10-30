@@ -26,6 +26,16 @@
       "owner": "ADMIN01",
       "status": "Active",
       "createdAt": "2025-10-10T00:00:00.000Z"
+    },
+    {
+      "id": "1d141811-10e3-4658-9fdf-5e257350fd75",
+      "userid": "TEST",
+      "name": "tester",
+      "defaultGroup": "STAFF",
+      "authOption": "1",
+      "owner": "IBMUSER",
+      "status": "Active",
+      "createdAt": "2025-10-30T11:40:33.255Z"
     }
   ]
 }

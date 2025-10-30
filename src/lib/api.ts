@@ -21,28 +21,58 @@ export type UpdateUserPayload = Partial<{
   expiration: string | null;
 }>;
 
+const API_BASE = (import.meta as any).env?.VITE_API_BASE || "http://localhost:4000/api";
+
+async function tryFetch<T>(url: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(url, {
+    headers: { "Content-Type": "application/json" },
+    ...init,
+  });
+  if (!res.ok) {
+    let message = `Request failed: ${res.status}`;
+    try {
+      const body = await res.json();
+      if (body?.message) message = body.message;
+    } catch {}
+    throw new Error(message);
+  }
+  return res.json();
+}
+
+async function serverAvailable(): Promise<boolean> {
+  try {
+    await tryFetch(`${API_BASE}/health`);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function normalizeAndSeed() {
   await ensureSeedData();
 }
 
 export async function fetchUsers(): Promise<UserRecord[]> {
+  if (await serverAvailable()) {
+    return tryFetch<UserRecord[]>(`${API_BASE}/users`);
+  }
   await normalizeAndSeed();
   return db.users.orderBy("userid").toArray();
 }
 
 export async function createUser(payload: CreateUserPayload): Promise<UserRecord> {
-  await normalizeAndSeed();
+  if (await serverAvailable()) {
+    return tryFetch<UserRecord>(`${API_BASE}/users`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  }
 
+  await normalizeAndSeed();
   const normalizedUserId = payload.userid.trim().toUpperCase();
   const defaultGroup = payload.defaultGroup.trim().toUpperCase();
-  const existing = await db.users
-    .where("userid")
-    .equals(normalizedUserId)
-    .first();
-
-  if (existing) {
-    throw new Error(`User ${normalizedUserId} already exists`);
-  }
+  const existing = await db.users.where("userid").equals(normalizedUserId).first();
+  if (existing) throw new Error(`User ${normalizedUserId} already exists`);
 
   const newUser: UserRecord = {
     id: crypto.randomUUID(),
@@ -55,23 +85,30 @@ export async function createUser(payload: CreateUserPayload): Promise<UserRecord
     authOption: payload.authOption,
     expiration: payload.expiration,
   };
-
   await db.users.add(newUser);
   return newUser;
 }
 
 export async function deleteUser(id: string): Promise<void> {
+  if (await serverAvailable()) {
+    await tryFetch<void>(`${API_BASE}/users/${id}`, { method: "DELETE" });
+    return;
+  }
   await normalizeAndSeed();
   await db.users.delete(id);
 }
 
 export async function updateUser(id: string, payload: UpdateUserPayload): Promise<UserRecord> {
-  await normalizeAndSeed();
-
-  const existing = await db.users.get(id);
-  if (!existing) {
-    throw new Error(`User with id ${id} not found`);
+  if (await serverAvailable()) {
+    return tryFetch<UserRecord>(`${API_BASE}/users/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
   }
+
+  await normalizeAndSeed();
+  const existing = await db.users.get(id);
+  if (!existing) throw new Error(`User with id ${id} not found`);
 
   const updates: Partial<UserRecord> = {};
   if (payload.userid !== undefined) updates.userid = payload.userid.trim().toUpperCase();
