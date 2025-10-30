@@ -55,13 +55,29 @@ const DEFAULT_USERS: UserRecord[] = [
   },
 ];
 
-let seeded = false;
+// Seed only once per browser profile. If the user later deletes all rows, do NOT reseed.
+// We persist a flag in localStorage to remember that seeding already happened.
+const SEEDED_FLAG_KEY = "mainframeUsers_seeded_v1";
 
 export async function ensureSeedData() {
-  if (seeded) return;
+  const hasSeededBefore = (() => {
+    try {
+      return typeof localStorage !== "undefined" && localStorage.getItem(SEEDED_FLAG_KEY) === "true";
+    } catch {
+      return false;
+    }
+  })();
+
   const count = await db.users.count();
-  if (count === 0) {
+
+  if (!hasSeededBefore && count === 0) {
     await db.users.bulkAdd(DEFAULT_USERS);
+    try {
+      if (typeof localStorage !== "undefined") {
+        localStorage.setItem(SEEDED_FLAG_KEY, "true");
+      }
+    } catch {
+      // ignore storage errors; seeding is still idempotent based on count
+    }
   }
-  seeded = true;
 }
