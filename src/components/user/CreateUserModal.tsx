@@ -3,10 +3,21 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { createUser, updateUser, type CreateUserPayload, type UpdateUserPayload, type UserRecord } from "@/lib/api";
+import {
+  createUser,
+  updateUser,
+  type CreateUserPayload,
+  type UpdateUserPayload,
+  type UserRecord,
+} from "@/lib/api";
 
 interface CreateUserModalProps {
   open: boolean;
@@ -28,7 +39,13 @@ const INITIAL_FORM_DATA = {
   expiration: "",
 };
 
-const CreateUserModal = ({ open, onClose, onCreated, editingUser, onUpdated }: CreateUserModalProps) => {
+const CreateUserModal = ({
+  open,
+  onClose,
+  onCreated,
+  editingUser,
+  onUpdated,
+}: CreateUserModalProps) => {
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState(INITIAL_FORM_DATA);
 
@@ -53,9 +70,12 @@ const CreateUserModal = ({ open, onClose, onCreated, editingUser, onUpdated }: C
   });
 
   const updateUserMutation = useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: UpdateUserPayload }) => updateUser(id, payload),
+    mutationFn: ({ id, payload }: { id: string; payload: UpdateUserPayload }) =>
+      updateUser(id, payload),
     onSuccess: (updated) => {
-      toast.success("User updated", { description: `${updated.userid} updated` });
+      toast.success("User updated", {
+        description: `${updated.userid} updated`,
+      });
       queryClient.invalidateQueries({ queryKey: ["users"] });
       setFormData(INITIAL_FORM_DATA);
       onUpdated?.(updated);
@@ -103,7 +123,10 @@ const CreateUserModal = ({ open, onClose, onCreated, editingUser, onUpdated }: C
 
     // Validate authentication based on option
     if (formData.authOption !== "4") {
-      if ((formData.authOption === "1" || formData.authOption === "3") && formData.password) {
+      if (
+        (formData.authOption === "1" || formData.authOption === "3") &&
+        formData.password
+      ) {
         if (formData.password !== formData.passwordConfirm) {
           toast.error("Passwords do not match");
           return;
@@ -112,13 +135,19 @@ const CreateUserModal = ({ open, onClose, onCreated, editingUser, onUpdated }: C
           toast.error("Password cannot equal the user ID");
           return;
         }
-        if (formData.password.toUpperCase() === formData.defaultGroup.toUpperCase()) {
+        if (
+          formData.password.toUpperCase() ===
+          formData.defaultGroup.toUpperCase()
+        ) {
           toast.error("Password cannot equal the default group");
           return;
         }
       }
-      
-      if ((formData.authOption === "2" || formData.authOption === "3") && formData.passwordPhrase) {
+
+      if (
+        (formData.authOption === "2" || formData.authOption === "3") &&
+        formData.passwordPhrase
+      ) {
         if (formData.passwordPhrase !== formData.passwordPhraseConfirm) {
           toast.error("Password phrases do not match");
           return;
@@ -132,7 +161,7 @@ const CreateUserModal = ({ open, onClose, onCreated, editingUser, onUpdated }: C
         name: formData.name.trim(),
         defaultGroup: formData.defaultGroup.toUpperCase(),
         authOption: formData.authOption,
-        expiration: formData.expiration || null,
+        ...(formData.expiration ? { expiration: formData.expiration } : {}),
       };
       updateUserMutation.mutate({ id: editingUser.id, payload });
       return;
@@ -150,14 +179,19 @@ const CreateUserModal = ({ open, onClose, onCreated, editingUser, onUpdated }: C
   };
 
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => {
-      if (!isOpen) {
-        onClose();
-      }
-    }}>
-        <DialogContent className="max-w-3xl bg-card border-border">
+    <Dialog
+      open={open}
+      onOpenChange={(isOpen) => {
+        if (!isOpen) {
+          onClose();
+        }
+      }}
+    >
+      <DialogContent className="max-w-3xl bg-card border-border">
         <DialogHeader>
-          <DialogTitle className="text-foreground">{editingUser ? "Edit User" : "Add User"}</DialogTitle>
+          <DialogTitle className="text-foreground">
+            {editingUser ? "Edit User" : "Add User"}
+          </DialogTitle>
         </DialogHeader>
 
         <Tabs defaultValue="general" className="w-full">
@@ -179,7 +213,12 @@ const CreateUserModal = ({ open, onClose, onCreated, editingUser, onUpdated }: C
                   id="userid"
                   placeholder="e.g., JDOE"
                   value={formData.userid}
-                  onChange={(e) => setFormData({ ...formData, userid: e.target.value.toUpperCase() })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      userid: e.target.value.toUpperCase(),
+                    })
+                  }
                   className="bg-carbon-field border-border text-foreground"
                   maxLength={8}
                 />
@@ -187,13 +226,16 @@ const CreateUserModal = ({ open, onClose, onCreated, editingUser, onUpdated }: C
 
               <div className="space-y-2">
                 <Label htmlFor="name" className="text-foreground">
-                  Full Name / Description <span className="text-destructive">*</span>
+                  Full Name / Description{" "}
+                  <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="name"
                   placeholder="e.g., John Doe - Contractor"
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
                   className="bg-carbon-field border-border text-foreground"
                 />
               </div>
@@ -206,7 +248,12 @@ const CreateUserModal = ({ open, onClose, onCreated, editingUser, onUpdated }: C
                   id="defaultGroup"
                   placeholder="e.g., STAFF"
                   value={formData.defaultGroup}
-                  onChange={(e) => setFormData({ ...formData, defaultGroup: e.target.value.toUpperCase() })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      defaultGroup: e.target.value.toUpperCase(),
+                    })
+                  }
                   className="bg-carbon-field border-border text-foreground"
                 />
               </div>
@@ -219,7 +266,9 @@ const CreateUserModal = ({ open, onClose, onCreated, editingUser, onUpdated }: C
                   id="expiration"
                   type="date"
                   value={formData.expiration}
-                  onChange={(e) => setFormData({ ...formData, expiration: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, expiration: e.target.value })
+                  }
                   className="bg-carbon-field border-border text-foreground"
                 />
               </div>
@@ -249,10 +298,17 @@ const CreateUserModal = ({ open, onClose, onCreated, editingUser, onUpdated }: C
                       name="authOption"
                       value="1"
                       checked={formData.authOption === "1"}
-                      onChange={(e) => setFormData({ ...formData, authOption: e.target.value as "1" | "2" | "3" | "4" })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          authOption: e.target.value as "1" | "2" | "3" | "4",
+                        })
+                      }
                       className="text-primary"
                     />
-                    <span className="text-foreground">Option 1: Password only</span>
+                    <span className="text-foreground">
+                      Option 1: Password only
+                    </span>
                   </label>
                   <label className="flex items-center gap-2 text-sm">
                     <input
@@ -260,10 +316,17 @@ const CreateUserModal = ({ open, onClose, onCreated, editingUser, onUpdated }: C
                       name="authOption"
                       value="2"
                       checked={formData.authOption === "2"}
-                      onChange={(e) => setFormData({ ...formData, authOption: e.target.value as "1" | "2" | "3" | "4" })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          authOption: e.target.value as "1" | "2" | "3" | "4",
+                        })
+                      }
                       className="text-primary"
                     />
-                    <span className="text-foreground">Option 2: Password phrase only</span>
+                    <span className="text-foreground">
+                      Option 2: Password phrase only
+                    </span>
                   </label>
                   <label className="flex items-center gap-2 text-sm">
                     <input
@@ -271,10 +334,17 @@ const CreateUserModal = ({ open, onClose, onCreated, editingUser, onUpdated }: C
                       name="authOption"
                       value="3"
                       checked={formData.authOption === "3"}
-                      onChange={(e) => setFormData({ ...formData, authOption: e.target.value as "1" | "2" | "3" | "4" })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          authOption: e.target.value as "1" | "2" | "3" | "4",
+                        })
+                      }
                       className="text-primary"
                     />
-                    <span className="text-foreground">Option 3: Both password and phrase</span>
+                    <span className="text-foreground">
+                      Option 3: Both password and phrase
+                    </span>
                   </label>
                   <label className="flex items-center gap-2 text-sm">
                     <input
@@ -282,10 +352,17 @@ const CreateUserModal = ({ open, onClose, onCreated, editingUser, onUpdated }: C
                       name="authOption"
                       value="4"
                       checked={formData.authOption === "4"}
-                      onChange={(e) => setFormData({ ...formData, authOption: e.target.value as "1" | "2" | "3" | "4" })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          authOption: e.target.value as "1" | "2" | "3" | "4",
+                        })
+                      }
                       className="text-primary"
                     />
-                    <span className="text-foreground">Option 4: Create as PROTECTED (no password)</span>
+                    <span className="text-foreground">
+                      Option 4: Create as PROTECTED (no password)
+                    </span>
                   </label>
                 </div>
               </div>
@@ -301,12 +378,17 @@ const CreateUserModal = ({ open, onClose, onCreated, editingUser, onUpdated }: C
                       type="password"
                       placeholder="Enter initial password"
                       value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, password: e.target.value })
+                      }
                       className="bg-carbon-field border-border text-foreground"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="passwordConfirm" className="text-foreground">
+                    <Label
+                      htmlFor="passwordConfirm"
+                      className="text-foreground"
+                    >
                       Confirm Password
                     </Label>
                     <Input
@@ -314,7 +396,12 @@ const CreateUserModal = ({ open, onClose, onCreated, editingUser, onUpdated }: C
                       type="password"
                       placeholder="Re-enter password"
                       value={formData.passwordConfirm}
-                      onChange={(e) => setFormData({ ...formData, passwordConfirm: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          passwordConfirm: e.target.value,
+                        })
+                      }
                       className="bg-carbon-field border-border text-foreground"
                     />
                     <p className="text-xs text-muted-foreground">
@@ -335,12 +422,20 @@ const CreateUserModal = ({ open, onClose, onCreated, editingUser, onUpdated }: C
                       type="password"
                       placeholder="Enter password phrase"
                       value={formData.passwordPhrase}
-                      onChange={(e) => setFormData({ ...formData, passwordPhrase: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          passwordPhrase: e.target.value,
+                        })
+                      }
                       className="bg-carbon-field border-border text-foreground"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="passwordPhraseConfirm" className="text-foreground">
+                    <Label
+                      htmlFor="passwordPhraseConfirm"
+                      className="text-foreground"
+                    >
                       Confirm Password Phrase
                     </Label>
                     <Input
@@ -348,7 +443,12 @@ const CreateUserModal = ({ open, onClose, onCreated, editingUser, onUpdated }: C
                       type="password"
                       placeholder="Re-enter password phrase"
                       value={formData.passwordPhraseConfirm}
-                      onChange={(e) => setFormData({ ...formData, passwordPhraseConfirm: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          passwordPhraseConfirm: e.target.value,
+                        })
+                      }
                       className="bg-carbon-field border-border text-foreground"
                     />
                   </div>
@@ -365,38 +465,65 @@ const CreateUserModal = ({ open, onClose, onCreated, editingUser, onUpdated }: C
 
           <TabsContent value="review" className="mt-4">
             <div className="space-y-3 p-4 bg-muted/50 rounded">
-              <h3 className="font-medium text-foreground">RACF Command Preview:</h3>
+              <h3 className="font-medium text-foreground">
+                RACF Command Preview:
+              </h3>
               <pre className="text-xs bg-background p-3 rounded border border-border text-foreground overflow-x-auto">
-                {`ADDUSER ${formData.userid || "<USERID>"} DFLTGRP(${formData.defaultGroup || "<GROUP>"}) 
+                {`ADDUSER ${formData.userid || "<USERID>"} DFLTGRP(${
+                  formData.defaultGroup || "<GROUP>"
+                }) 
   NAME('${formData.name || "<NAME>"}')${
-    formData.authOption === "4" ? " PROTECTED" :
-    formData.password && (formData.authOption === "1" || formData.authOption === "3") ? ` PASSWORD(${formData.password})` : ""
-  }${
-    formData.passwordPhrase && (formData.authOption === "2" || formData.authOption === "3") ? ` PHRASE('${formData.passwordPhrase}')` : ""
-  }${formData.expiration ? ` EXPDATE(${formData.expiration.replace(/-/g, "")})` : ""}`}
+                  formData.authOption === "4"
+                    ? " PROTECTED"
+                    : formData.password &&
+                      (formData.authOption === "1" ||
+                        formData.authOption === "3")
+                    ? ` PASSWORD(${formData.password})`
+                    : ""
+                }${
+                  formData.passwordPhrase &&
+                  (formData.authOption === "2" || formData.authOption === "3")
+                    ? ` PHRASE('${formData.passwordPhrase}')`
+                    : ""
+                }${
+                  formData.expiration
+                    ? ` EXPDATE(${formData.expiration.replace(/-/g, "")})`
+                    : ""
+                }`}
               </pre>
               <p className="text-xs text-muted-foreground">
-                Review the command that will be executed. Click Create to submit.
+                Review the command that will be executed. Click Create to
+                submit.
               </p>
             </div>
           </TabsContent>
         </Tabs>
 
-          <div className="flex justify-end gap-2 pt-4 border-t border-border">
+        <div className="flex justify-end gap-2 pt-4 border-t border-border">
           <Button
             variant="outline"
             onClick={onClose}
             className="border-border"
-            disabled={createUserMutation.isPending || updateUserMutation.isPending}
+            disabled={
+              createUserMutation.isPending || updateUserMutation.isPending
+            }
           >
             Cancel
           </Button>
           <Button
             onClick={handleSubmit}
             className="bg-primary hover:bg-primary/90 text-primary-foreground"
-            disabled={createUserMutation.isPending || updateUserMutation.isPending}
+            disabled={
+              createUserMutation.isPending || updateUserMutation.isPending
+            }
           >
-            {createUserMutation.isPending ? "Creating..." : updateUserMutation.isPending ? "Saving..." : (editingUser ? "Save Changes" : "Create User")}
+            {createUserMutation.isPending
+              ? "Creating..."
+              : updateUserMutation.isPending
+              ? "Saving..."
+              : editingUser
+              ? "Save Changes"
+              : "Create User"}
           </Button>
         </div>
       </DialogContent>

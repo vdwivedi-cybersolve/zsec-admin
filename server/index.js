@@ -71,7 +71,7 @@ const userSchema = z.object({
   owner: z.string().trim().optional(),
   status: z.enum(["Active", "Inactive"]).optional(),
   authOption: z.enum(["1", "2", "3", "4"]).optional(),
-  expiration: z.string().trim().optional(),
+  expiration: z.string().trim().nullable().optional(),
 });
 
 const app = express();
@@ -191,24 +191,38 @@ app.put("/api/users/:id", async (req, res, next) => {
       ...(parsed.data.userid !== undefined
         ? { userid: parsed.data.userid.trim().toUpperCase() }
         : {}),
-      ...(parsed.data.name !== undefined ? { name: parsed.data.name.trim() } : {}),
+      ...(parsed.data.name !== undefined
+        ? { name: parsed.data.name.trim() }
+        : {}),
       ...(parsed.data.defaultGroup !== undefined
         ? { defaultGroup: parsed.data.defaultGroup.trim().toUpperCase() }
         : {}),
       ...(parsed.data.owner !== undefined
         ? { owner: parsed.data.owner.trim().toUpperCase() }
         : {}),
-      ...(parsed.data.status !== undefined ? { status: parsed.data.status } : {}),
-      ...(parsed.data.authOption !== undefined ? { authOption: parsed.data.authOption } : {}),
-      ...(parsed.data.expiration !== undefined ? { expiration: parsed.data.expiration || null } : {}),
+      ...(parsed.data.status !== undefined
+        ? { status: parsed.data.status }
+        : {}),
+      ...(parsed.data.authOption !== undefined
+        ? { authOption: parsed.data.authOption }
+        : {}),
+      ...(parsed.data.expiration !== undefined
+        ? { expiration: parsed.data.expiration || null }
+        : {}),
     };
 
     // Enforce unique userid across records (excluding this record)
     if (
       normalized.userid &&
-      users.some((u) => u.id !== id && u.userid.toUpperCase() === normalized.userid.toUpperCase())
+      users.some(
+        (u) =>
+          u.id !== id &&
+          u.userid.toUpperCase() === normalized.userid.toUpperCase()
+      )
     ) {
-      return res.status(409).json({ message: `User ${normalized.userid} already exists` });
+      return res
+        .status(409)
+        .json({ message: `User ${normalized.userid} already exists` });
     }
 
     users[idx] = normalized;
