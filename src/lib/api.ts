@@ -21,7 +21,11 @@ export type UpdateUserPayload = Partial<{
   expiration: string | null;
 }>;
 
-const API_BASE = (import.meta as any).env?.VITE_API_BASE || ((import.meta as any).env?.PROD ? "https://zsec-admin-server.onrender.com/api" : "http://localhost:4000/api");
+const API_BASE =
+  (import.meta as any).env?.VITE_API_BASE ||
+  ((import.meta as any).env?.PROD
+    ? "https://zsec-admin-server.onrender.com/api"
+    : "http://localhost:4000/api");
 
 async function tryFetch<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, {
@@ -31,12 +35,25 @@ async function tryFetch<T>(url: string, init?: RequestInit): Promise<T> {
   if (!res.ok) {
     let message = `Request failed: ${res.status}`;
     try {
-      const body = await res.json();
-      if (body?.message) message = body.message;
+      const bodyText = await res.text();
+      if (bodyText) {
+        const body = JSON.parse(bodyText);
+        if (body?.message) message = body.message;
+      }
     } catch {}
     throw new Error(message);
   }
-  return res.json();
+  // No content
+  if (res.status === 204 || res.status === 205) {
+    return undefined as unknown as T;
+  }
+  const contentType = res.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) {
+    return undefined as unknown as T;
+  }
+  const text = await res.text();
+  if (!text) return undefined as unknown as T;
+  return JSON.parse(text) as T;
 }
 
 async function serverAvailable(): Promise<boolean> {
@@ -60,7 +77,9 @@ export async function fetchUsers(): Promise<UserRecord[]> {
   return db.users.orderBy("userid").toArray();
 }
 
-export async function createUser(payload: CreateUserPayload): Promise<UserRecord> {
+export async function createUser(
+  payload: CreateUserPayload
+): Promise<UserRecord> {
   if (await serverAvailable()) {
     return tryFetch<UserRecord>(`${API_BASE}/users`, {
       method: "POST",
@@ -71,7 +90,10 @@ export async function createUser(payload: CreateUserPayload): Promise<UserRecord
   await normalizeAndSeed();
   const normalizedUserId = payload.userid.trim().toUpperCase();
   const defaultGroup = payload.defaultGroup.trim().toUpperCase();
-  const existing = await db.users.where("userid").equals(normalizedUserId).first();
+  const existing = await db.users
+    .where("userid")
+    .equals(normalizedUserId)
+    .first();
   if (existing) throw new Error(`User ${normalizedUserId} already exists`);
 
   const newUser: UserRecord = {
@@ -98,7 +120,10 @@ export async function deleteUser(id: string): Promise<void> {
   await db.users.delete(id);
 }
 
-export async function updateUser(id: string, payload: UpdateUserPayload): Promise<UserRecord> {
+export async function updateUser(
+  id: string,
+  payload: UpdateUserPayload
+): Promise<UserRecord> {
   if (await serverAvailable()) {
     return tryFetch<UserRecord>(`${API_BASE}/users/${id}`, {
       method: "PUT",
@@ -111,13 +136,17 @@ export async function updateUser(id: string, payload: UpdateUserPayload): Promis
   if (!existing) throw new Error(`User with id ${id} not found`);
 
   const updates: Partial<UserRecord> = {};
-  if (payload.userid !== undefined) updates.userid = payload.userid.trim().toUpperCase();
+  if (payload.userid !== undefined)
+    updates.userid = payload.userid.trim().toUpperCase();
   if (payload.name !== undefined) updates.name = payload.name.trim();
-  if (payload.defaultGroup !== undefined) updates.defaultGroup = payload.defaultGroup.trim().toUpperCase();
-  if (payload.owner !== undefined) updates.owner = payload.owner.trim().toUpperCase();
+  if (payload.defaultGroup !== undefined)
+    updates.defaultGroup = payload.defaultGroup.trim().toUpperCase();
+  if (payload.owner !== undefined)
+    updates.owner = payload.owner.trim().toUpperCase();
   if (payload.status !== undefined) updates.status = payload.status;
   if (payload.authOption !== undefined) updates.authOption = payload.authOption;
-  if (payload.expiration !== undefined) updates.expiration = payload.expiration || null;
+  if (payload.expiration !== undefined)
+    updates.expiration = payload.expiration || null;
 
   await db.users.update(id, updates as any);
   const updated = await db.users.get(id);
