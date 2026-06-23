@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import {
   createUser,
+  fetchGroups,
   updateUser,
   type CreateUserPayload,
   type UpdateUserPayload,
@@ -37,6 +38,7 @@ const INITIAL_FORM_DATA = {
   passwordPhraseConfirm: "",
   authOption: "1" as "1" | "2" | "3" | "4",
   expiration: "",
+  connectGroups: [] as string[],
 };
 
 const CreateUserModal = ({
@@ -48,6 +50,12 @@ const CreateUserModal = ({
 }: CreateUserModalProps) => {
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState(INITIAL_FORM_DATA);
+
+  const { data: availableGroups = [] } = useQuery({
+    queryKey: ["groups"],
+    queryFn: fetchGroups,
+    enabled: open,
+  });
 
   const createUserMutation = useMutation({
     mutationFn: (payload: CreateUserPayload) => createUser(payload),
@@ -111,9 +119,19 @@ const CreateUserModal = ({
         passwordPhraseConfirm: "",
         authOption: editingUser.authOption || "1",
         expiration: editingUser.expiration || "",
+        connectGroups: editingUser.connectGroups || [],
       });
     }
   }, [open, editingUser]);
+
+  const toggleConnectGroup = (group: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      connectGroups: prev.connectGroups.includes(group)
+        ? prev.connectGroups.filter((g) => g !== group)
+        : [...prev.connectGroups, group],
+    }));
+  };
 
   const handleSubmit = () => {
     if (!formData.userid || !formData.name || !formData.defaultGroup) {
@@ -161,6 +179,7 @@ const CreateUserModal = ({
         name: formData.name.trim(),
         defaultGroup: formData.defaultGroup.toUpperCase(),
         authOption: formData.authOption,
+        connectGroups: formData.connectGroups,
         ...(formData.expiration ? { expiration: formData.expiration } : {}),
       };
       updateUserMutation.mutate({ id: editingUser.id, payload });
@@ -172,6 +191,7 @@ const CreateUserModal = ({
       name: formData.name.trim(),
       defaultGroup: formData.defaultGroup.toUpperCase(),
       authOption: formData.authOption,
+      connectGroups: formData.connectGroups,
       expiration: formData.expiration || undefined,
     };
 
@@ -281,9 +301,60 @@ const CreateUserModal = ({
             </div>
           </TabsContent>
 
-          <TabsContent value="groups" className="mt-4">
-            <div className="text-sm text-muted-foreground p-4 bg-muted/50 rounded">
-              Add user to additional groups beyond the default group.
+          <TabsContent value="groups" className="mt-4 space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Connect this user to additional groups beyond the default group
+              {formData.defaultGroup ? (
+                <>
+                  {" "}
+                  (<span className="font-mono">{formData.defaultGroup}</span>)
+                </>
+              ) : null}
+              .
+            </p>
+            <div className="max-h-64 overflow-auto rounded border border-border">
+              {availableGroups.length === 0 ? (
+                <p className="p-4 text-center text-sm text-muted-foreground">
+                  No groups available. Create groups from the Group page first.
+                </p>
+              ) : (
+                <ul className="divide-y divide-border">
+                  {availableGroups.map((group) => {
+                    const isDefault =
+                      group.group === formData.defaultGroup.toUpperCase();
+                    return (
+                      <li
+                        key={group.id}
+                        className="flex items-center gap-3 px-4 py-2.5 hover:bg-carbon-hover"
+                      >
+                        <input
+                          type="checkbox"
+                          className="rounded border-border"
+                          checked={
+                            isDefault ||
+                            formData.connectGroups.includes(group.group)
+                          }
+                          disabled={isDefault}
+                          onChange={() => toggleConnectGroup(group.group)}
+                        />
+                        <span className="font-mono text-sm text-foreground">
+                          {group.group}
+                        </span>
+                        {group.installationData && (
+                          <span className="text-sm text-muted-foreground truncate">
+                            {group.installationData}
+                          </span>
+                        )}
+                        {isDefault && (
+                          <span className="ml-auto text-xs text-primary">
+                            default group
+                          </span>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
             </div>
           </TabsContent>
 
@@ -471,7 +542,7 @@ const CreateUserModal = ({
               <pre className="text-xs bg-background p-3 rounded border border-border text-foreground overflow-x-auto">
                 {`ADDUSER ${formData.userid || "<USERID>"} DFLTGRP(${
                   formData.defaultGroup || "<GROUP>"
-                }) 
+                })
   NAME('${formData.name || "<NAME>"}')${
                   formData.authOption === "4"
                     ? " PROTECTED"
@@ -489,7 +560,13 @@ const CreateUserModal = ({
                   formData.expiration
                     ? ` EXPDATE(${formData.expiration.replace(/-/g, "")})`
                     : ""
-                }`}
+                }${formData.connectGroups
+                  .filter((g) => g !== formData.defaultGroup.toUpperCase())
+                  .map(
+                    (g) =>
+                      `\nCONNECT ${formData.userid || "<USERID>"} GROUP(${g})`
+                  )
+                  .join("")}`}
               </pre>
               <p className="text-xs text-muted-foreground">
                 Review the command that will be executed. Click Create to

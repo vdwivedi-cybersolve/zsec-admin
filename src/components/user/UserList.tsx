@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/table";
 import { toast } from "sonner";
 import { deleteUser, fetchUsers, type UserRecord } from "@/lib/api";
+import AssignGroupDialog from "@/components/user/AssignGroupDialog";
 
 interface UserListProps {
   onCreateUser: () => void;
@@ -21,6 +22,7 @@ interface UserListProps {
 const UserList = ({ onCreateUser, onEditUser }: UserListProps) => {
   const queryClient = useQueryClient();
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [showAssignDialog, setShowAssignDialog] = useState(false);
 
   const {
     data: users = [],
@@ -84,6 +86,7 @@ const UserList = ({ onCreateUser, onEditUser }: UserListProps) => {
               size="sm"
               disabled={selectedUsers.length === 0}
               className="bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-50 disabled:pointer-events-none"
+              onClick={() => setShowAssignDialog(true)}
             >
               <UserPlus className="h-4 w-4 mr-2" />
               Assign to Group
@@ -207,6 +210,12 @@ const UserList = ({ onCreateUser, onEditUser }: UserListProps) => {
           </TableBody>
         </Table>
       </div>
+
+      <AssignGroupDialog
+        open={showAssignDialog}
+        onClose={() => setShowAssignDialog(false)}
+        userIds={selectedUsers}
+      />
     </div>
   );
 };
